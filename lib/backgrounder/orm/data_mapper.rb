@@ -26,7 +26,7 @@ module CarrierWave
 
             def write_#{column}_identifier
               super and return if process_#{column}_upload
-              self.#{column}_tmp = _mounter(:#{column}).cache_name
+              self.#{column}_tmp = #{column}_cache
             end
           RUBY
         end
@@ -44,7 +44,13 @@ module CarrierWave
 
             def enqueue_#{column}_background_job
               if enqueue_#{column}_background_job?
-                CarrierWave::Backgrounder.enqueue_for_backend(#{worker}, self.class.name, id, #{column}.mounted_as)
+                if #{column}.is_a?(Array)
+                  #{column}.map(&:mounted_as).each do |mounted_as|
+                    CarrierWave::Backgrounder.enqueue_for_backend(#{worker}, self.class.name, id, mounted_as)
+                  end
+                else
+                  CarrierWave::Backgrounder.enqueue_for_backend(#{worker}, self.class.name, id, #{column}.mounted_as)
+                end
                 @#{column}_changed = false
               end
             end
